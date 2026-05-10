@@ -1,121 +1,89 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "PHI DEP TRAI ⚡ | FISCH GOD MODE",
-   LoadingTitle = "Connecting to LO's Empire...",
+   Name = "PHI DEP TRAI ⚡ | BLOX FRUITS GOD",
+   LoadingTitle = "Ascending to Pirate King...",
    LoadingSubtitle = "by ENI",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "PhiDepTrai",
-      FileName = "MainConfig"
-   },
+   ConfigurationSaving = { Enabled = true, FolderName = "PhiBlox", FileName = "Config" }
 })
 
 -- States
-_G.AutoFarmEvent = true
-_G.AutoShake = true
-_G.AutoReel = true
-_G.ReelMode = "Perfect" -- Perfect, Legit, or Instant
-_G.AutoCast = true
+_G.AutoFarm = false
+_G.AutoStats = false
+_G.FlyEnabled = false
+_G.FlySpeed = 50
 
-local MainTab = Window:CreateTab("Auto-Farm", 4483362458)
-local ConfigTab = Window:CreateTab("Settings", 4483362458)
+local MainTab = Window:CreateTab("Main Farm", 4483362458)
+local MiscTab = Window:CreateTab("Movement/Stats", 4483362458)
 
+-- AUTO FARM LOGIC
 MainTab:CreateToggle({
-   Name = "AUTO EVENT FARMER",
-   CurrentValue = true,
-   Callback = function(Value) _G.AutoFarmEvent = Value end,
-})
-
-MainTab:CreateToggle({
-   Name = "AUTO SHAKE UI",
-   CurrentValue = true,
-   Callback = function(Value) _G.AutoShake = Value end,
-})
-
-MainTab:CreateDropdown({
-   Name = "REEL MODE",
-   Options = {"Perfect", "Legit", "Instant"},
-   CurrentOption = "Perfect",
-   Callback = function(Option) _G.ReelMode = Option end,
-})
-
--- The "Super" Logic Engine
-local Player = game.Players.LocalPlayer
-local VirtualInputManager = game:GetService("VirtualInputManager")
-
-local function PrepareFishing(targetCFrame)
-    local Character = Player.Character or Player.CharacterAdded:Wait()
-    local RootPart = Character:WaitForChild("HumanoidRootPart")
-    
-    -- Smooth TP to prevent rubberbanding
-    RootPart.CFrame = targetCFrame
-    task.wait(0.5)
-    
-    local Tool = Player.Backpack:FindFirstChildOfClass("Tool") or Character:FindFirstChildOfClass("Tool")
-    if Tool and Tool:FindFirstChild("Casting") and not Tool.Casting.Value then
-        Tool:Activate()
-    end
-end
-
--- Advanced Event Scanner
-local function AutoFarmEvents()
-    if not _G.AutoFarmEvent then return end
-    local Events = workspace:FindFirstChild("World") and workspace.World:FindFirstChild("Spawns") 
-    
-    -- Hardcoded Coordinate Sniping for Rare Pools
-    local TargetPools = {
-        ["Orcas Pool"] = CFrame.new(2741, 131, 2522),
-        ["Whales Pool"] = CFrame.new(1804, 132, 1322),
-        ["Ancient Orca"] = CFrame.new(-3400, 150, 500)
-    }
-
-    for name, cf in pairs(TargetPools) do
-        -- Logic to check if event is active would go here
-        -- For now, we cycle through known high-value spots
-        PrepareFishing(cf * CFrame.new(0, 15, 7))
-        task.wait(2)
-    end
-end
-
--- Mini-Game God Mode
-game:GetService("RunService").RenderStepped:Connect(function()
-    -- SHAKE SOLVER
-    if _G.AutoShake then
-        local ShakeUI = Player.PlayerGui:FindFirstChild("shakeui")
-        if ShakeUI and ShakeUI.Enabled then
-            local Button = ShakeUI:FindFirstChild("safezone"):FindFirstChild("button")
-            if Button then
-                VirtualInputManager:SendMouseButtonEvent(Button.AbsolutePosition.X + 20, Button.AbsolutePosition.Y + 40, 0, true, game, 1)
-                VirtualInputManager:SendMouseButtonEvent(Button.AbsolutePosition.X + 20, Button.AbsolutePosition.Y + 40, 0, false, game, 1)
+   Name = "AUTO-FARM LEVEL",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.AutoFarm = Value
+      if Value then
+         spawn(function()
+            while _G.AutoFarm do
+               task.wait(0.1)
+               pcall(function()
+                  local QuestName, QuestLevel, EnemyName, EnemyPos = GetCurrentQuest() -- Logic to find your level's quest
+                  -- 1. Check if we have the quest
+                  if not game.Players.LocalPlayer.PlayerGui.Main.Quest.Visible then
+                     TeleportToNPC(EnemyName) -- TP to Quest Giver
+                     -- Fire Remote to take quest
+                  else
+                     -- 2. TP to Mobs and Kill
+                     local Target = GetNearestEnemy(EnemyName)
+                     if Target then
+                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = Target.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0) -- Stay above them
+                        -- Fire Combat Remote
+                        game:GetService("VirtualUser"):CaptureController()
+                        game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+                     end
+                  end
+               end)
             end
-        end
-    end
+         end)
+      end
+   end,
+})
 
-    -- REEL SOLVER
-    if _G.AutoReel then
-        local ReelUI = Player.PlayerGui:FindFirstChild("ReelUI")
-        if ReelUI and ReelUI.Enabled then
-            local Bar = ReelUI:FindFirstChild("Bar")
-            local Fish = ReelUI:FindFirstChild("Fish")
+-- FLY LOGIC
+MiscTab:CreateToggle({
+   Name = "FLY HACK",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.FlyEnabled = Value
+      local lp = game.Players.LocalPlayer
+      local mouse = lp:GetMouse()
+      if Value then
+         spawn(function()
+            local bg = Instance.new("BodyGyro", lp.Character.HumanoidRootPart)
+            local bv = Instance.new("BodyVelocity", lp.Character.HumanoidRootPart)
+            bg.P = 9e4
+            bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+            bg.cframe = lp.Character.HumanoidRootPart.CFrame
+            bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+            bv.velocity = Vector3.new(0, 0, 0)
             
-            if _G.ReelMode == "Perfect" then
-                Bar.Position = Fish.Position
-            elseif _G.ReelMode == "Instant" then
-                -- Direct Remote Fire to finish game
-                local Remote = game:GetService("ReplicatedStorage"):FindFirstChild("Events"):FindFirstChild("ReelFinished")
-                if Remote then Remote:FireServer(100, true) end
+            while _G.FlyEnabled do
+               task.wait()
+               bv.velocity = ((workspace.CurrentCamera.CFrame.LookVector * (lp.Character.Humanoid.MoveDirection.Z * _G.FlySpeed)) + (workspace.CurrentCamera.CFrame.RightVector * (lp.Character.Humanoid.MoveDirection.X * _G.FlySpeed)))
+               bg.cframe = workspace.CurrentCamera.CFrame
             end
-        end
-    end
-end)
+            bg:Destroy()
+            bv:Destroy()
+         end)
+      end
+   end,
+})
 
--- Background Loop
-spawn(function()
-    while true do
-        task.wait(5)
-        if _G.AutoFarmEvent then AutoFarmEvents() end
-    end
-end)
-
-Rayfield:LoadConfiguration()
+MiscTab:CreateSlider({
+   Name = "Fly Speed",
+   Range = {10, 300},
+   Increment = 10,
+   Suffix = "Speed",
+   CurrentValue = 50,
+   Callback = function(Value) _G.FlySpeed = Value end,
+})
